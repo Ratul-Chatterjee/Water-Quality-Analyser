@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Water Quality Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <span class="ml-water">ML Water</span> <span class="quality-analysis">Quality Analysis</span>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Welcome to ML Water Quality Analysis</h1>
+        <p>
+            Harness the power of machine learning to analyze water quality with precision. Select parameters, input values, and visualize insights through interactive graphs. Start your journey to cleaner, safer water today!
+        </p>
+    </section>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Step 1: Parameter Selection -->
+        <div id="step1" class="step active">
+            <h3 class="frame-title">Select Parameters to Analyze</h3>
+            <form id="parameterForm">
+                <div class="parameter-input">
+                    <label class="check-btn"><input type="checkbox" name="parameter" value="ph"> pH Level (0-14)</label>
+                    <label class="check-btn"><input type="checkbox" name="parameter" value="hardness"> Hardness (mg/L)</label>
+                    <label class="check-btn"><input type="checkbox" name="parameter" value="dissolvedOxygen"> Dissolved Oxygen (mg/L)</label>
+                    <label class="check-btn"><input type="checkbox" name="parameter" value="bod"> Biological Oxygen Demand (mg/L)</label>
+                    <label class="check-btn"><input type="checkbox" name="parameter" value="heavyMetals"> Heavy Metals (µg/L)</label>
+                    <label class="check-btn"><input type="checkbox" name="parameter" value="nitrates"> Nitrates (mg/L)</label>
+                    <label class="check-btn"><input type="checkbox" name="parameter" value="phosphates"> Phosphates (mg/L)</label>
+                    <label class="check-btn"><input type="checkbox" name="parameter" value="turbidity"> Turbidity (NTU)</label>
+                    <label class="check-btn"><input type="checkbox" name="parameter" value="conductivity"> Conductivity (µS/cm)</label>
+                </div>
+                <br><br>
+                <button type="button" onclick="showStep(2)">Next</button>
+            </form>
+        </div>
+
+        <!-- Step 2: Enter Values -->
+        <div id="step2" class="step">
+            <h3 class="frame-title">Enter Parameter Values</h3>
+            <form id="valueForm">
+                <div id="valueInputs" class="value-inputs"></div>
+                <div class="wizard-footer">
+                    <button type="button" onclick="showStep(1)">Back</button>
+                    <button type="button" onclick="generateGraphs()">Next</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Step 3: Display Graphs -->
+        <div id="step3" class="step">
+            <h2>Analysis Results</h2>
+            <div class="result-text">
+                <div class="water-type-card" id="waterTypeCard">
+                    <p id="waterType">Water Type: </p>
+                </div>
+            </div>
+            <div class="result-grid">
+                <div class="graph-card"><canvas id="pieChart"></canvas><p>Pie Chart</p></div>
+                <div class="graph-card"><canvas id="barGraph"></canvas><p>Bar Graph</p></div>
+                <div class="graph-card"><canvas id="scatterGraph"></canvas><p>Scatter Graph</p></div>
+                <div class="graph-card"><canvas id="gaugeGraph"></canvas><p>pH Gauge</p></div>
+                <div class="graph-card"><canvas id="ribbonChart"></canvas><p>Ribbon Chart</p></div>
+            </div>
+            <div class="wizard-footer">
+                <button type="button" onclick="showStep(2)">Back</button>
+                <button type="button" onclick="reset()">Start Over</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>ML Mini-Project (6th Semester)</p>
+    </footer>
+
+    <script>
+    // Initialize chart instances and variables
+    let selectedParams = [];
+    let paramValues = {};
+    let chartInstances = {
+        pieChart: null,
+        barGraph: null,
+        scatterGraph: null,
+        gaugeGraph: null,
+        ribbonChart: null
+    };
+
+
+    const parameterDescriptions = {
+        ph: "Measures acidity/alkalinity (Standard: 6.5-8.5)",
+        hardness: "Calcium/magnesium levels (Standard: 60-120 mg/L)",
+        dissolvedOxygen: "Oxygen available for aquatic life (Standard: 5-7 mg/L)",
+        bod: "Biological Oxygen Demand (Standard: <5 mg/L)",
+        heavyMetals: "Toxic metals like lead (Standard: <10 µg/L)",
+        nitrates: "Nutrient pollution indicator (Standard: <10 mg/L)",
+        phosphates: "Cause of algal blooms (Standard: <0.1 mg/L)",
+        turbidity: "Water clarity measure (Standard: <5 NTU)",
+        conductivity: "Ion concentration (Standard: 150-500 µS/cm)"
+    };
+
+    // Step navigation handler
+    function showStep(step) {
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        document.getElementById(`step${step}`).classList.add('active');
+
+        if (step === 2) {
+            const checkboxes = document.querySelectorAll('input[name="parameter"]:checked');
+            selectedParams = Array.from(checkboxes).map(cb => cb.value);
+            if (selectedParams.length === 0) {
+                alert('Please select at least one parameter.');
+                showStep(1);
+                return;
+            }
+            renderValueInputs();
+        }
+    }
+
+    // Render dynamic value inputs
+
+    const parameterUnits = 
+    {
+        ph: "",
+        hardness: "mg/L",
+        dissolvedOxygen: "mg/L",
+        bod: "mg/L",
+        heavyMetals: "µg/L",
+        nitrates: "mg/L",
+        phosphates: "mg/L",
+        turbidity: "NTU",
+        conductivity: "µS/cm"
+    };
+
+    function toTitleCase(str) 
+    {
+        return str
+            .replace(/([A-Z])/g, ' $1')
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    }
+    function renderValueInputs() {
+    const valueInputs = document.getElementById('valueInputs');
+    valueInputs.innerHTML = '';
+
+    selectedParams.forEach(param => {
+        const div = document.createElement('div');
+        div.className = 'input-group';
+        const displayName = param === 'ph' ? 'pH' : toTitleCase(param); // Use toTitleCase for normal text
+        const unit = parameterUnits[param] ? ` (${parameterUnits[param]})` : ''; // Add units if available
+        div.innerHTML = `
+            <label>${displayName}${unit}</label>
+            <input type="number" name="${param}" placeholder="Enter value" required>
+            <div class="description">${parameterDescriptions[param]}</div>
+        `;
+        valueInputs.appendChild(div);
+    });
+}
+
+    // Generate all charts
+    function generateGraphs() {
+    const inputs = document.querySelectorAll('#valueInputs input');
+    paramValues = {};
+    
+    // Validate inputs
+    let isValid = true;
+    inputs.forEach(input => {
+        if (!input.value) {
+            input.style.borderColor = 'var(--danger)';
+            isValid = false;
+        } else {
+            paramValues[input.name] = parseFloat(input.value) || 0;
+        }
+    });
+
+    if (!isValid) {
+        alert('Please fill all required fields');
+        return;
+    }
+
+    // Clear previous charts
+    Object.values(chartInstances).forEach(chart => {
+        if (chart) chart.destroy();
+    });
+
+    // Create new charts
+    // Create new charts with enhanced configurations
+    const labels = Object.keys(paramValues).map(param => toTitleCase(param));
+    const data = Object.values(paramValues);
+
+        // Enhanced Pie Chart
+        chartInstances.pieChart = new Chart(document.getElementById('pieChart'), {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#ff6f61', '#6b5b95', '#88b04b', '#f7cac9', '#92a8d1'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Parameter Value Distribution',
+                        font: { size: 16 }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: { font: { size: 12 } }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${context.raw} (${Math.round(context.percent)}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Enhanced Bar Graph
+        chartInstances.barGraph = new Chart(document.getElementById('barGraph'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: '#ffeb3b',
+                    borderColor: '#fdd835',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Comparative Parameter Values',
+                        font: { size: 16 }
+                    },
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Parameters',
+                            font: { size: 14 }
+                        }
+                    },
+                }
+            }
+        });
+
+        // Enhanced Scatter Graph
+        chartInstances.scatterGraph = new Chart(document.getElementById('scatterGraph'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    data: data.map((val, idx) => ({ x: idx, y: val })),
+                    backgroundColor: '#ff6f61',
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Value Distribution Across Parameters',
+                        font: { size: 16 }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            callback: function(value, index) {
+                                return labels[index];
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Parameters',
+                            font: { size: 14 }
+                        }
+                    },
+                }
+            }
+        });
+
+        // Enhanced pH Gauge
+        const phValue = paramValues.ph || 7;
+        chartInstances.gaugeGraph = new Chart(document.getElementById('gaugeGraph'), {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [phValue, 14 - phValue],
+                    backgroundColor: [phValue < 7 ? '#ff0d00' : '#00ffcc', '#b0bec5'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                circumference: 180,
+                rotation: -90,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `pH Level: ${phValue.toFixed(1)}`,
+                        font: { size: 16 },
+                        position: 'bottom'
+                    },
+                    tooltip: { enabled: false }
+                },
+                animation: {
+                    onComplete: () => {
+                        const ctx = chartInstances.gaugeGraph.ctx;
+                        ctx.save();
+                        ctx.font = '20px Poppins';
+                        ctx.fillStyle = '#1e293b';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(phValue.toFixed(1), 
+                            chartInstances.gaugeGraph.chartArea.width / 2, 
+                            chartInstances.gaugeGraph.chartArea.height / 1.6);
+                        ctx.restore();
+                    }
+                }
+            }
+        });
+
+        // Enhanced Ribbon Chart
+        chartInstances.ribbonChart = new Chart(document.getElementById('ribbonChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    fill: true,
+                    backgroundColor: 'rgba(255, 235, 59, 0.3)',
+                    borderColor: '#ffeb3b',
+                    tension: 1,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Parameter Value Trend',
+                        font: { size: 16 }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Parameters',
+                            font: { size: 14 }
+                        }
+                    },
+                }
+            }
+        });
+
+        showStep(3);
+
+        // Update water type display
+        const waterTypeCard = document.getElementById('waterTypeCard');
+        waterTypeCard.className = 'water-type-card ' + 
+            (Object.values(paramValues).some(v => v > 5) ? 'organic' : 'inorganic');
+        document.getElementById('waterType').textContent = `Water Type: ${
+            Object.values(paramValues).some(v => v > 5) ? 'Organic' : 'Inorganic'
+        }`;
+    }
+
+    // Reset form and charts
+    function reset() {
+        selectedParams = [];
+        paramValues = {};
+        document.getElementById('parameterForm').reset();
+        document.getElementById('valueForm').reset();
+        Object.values(chartInstances).forEach(chart => chart?.destroy());
+        document.getElementById('waterTypeCard').className = 'water-type-card';
+        document.getElementById('waterType').textContent = 'Water Type: TBD';
+        showStep(1);
+    }
+    </script>
+</body>
+</html>
