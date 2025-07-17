@@ -1,4 +1,4 @@
-# Water Quality Classification Using Machine Learning
+# Water Quality Analyser
 
 A Flask-based web application that leverages a machine learning model to classify water quality as organic or inorganic based on user-input parameters, offering interactive visualizations for insightful analysis.
 
