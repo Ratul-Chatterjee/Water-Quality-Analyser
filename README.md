@@ -41,35 +41,6 @@ Developed as a 6th-semester mini-project, this repository demonstrates the integ
 
 ---
 
-## Installation
-
-Follow these steps to set up the project locally:
-
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/your-username/water-quality-classification.git
-   ```
-2. **Navigate to the Directory**:
-   ```bash
-   cd water-quality-classification
-   ```
-3. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-   *Note: If `requirements.txt` is unavailable, install manually:*
-   ```bash
-   pip install flask numpy pandas scikit-learn xgboost joblib
-   ```
-4. **Verify Model Files**:
-   Ensure `water_quality_xgboost_model.pkl` and `scaler.joblib` are in the root directory. These files are generated from the `water_quality_analysis.ipynb` notebook.
-5. **Launch the Application**:
-   ```bash
-   python app.py
-   ```
-
----
-
 ## Usage
 
 1. Open your browser and visit `http://localhost:5000`.
